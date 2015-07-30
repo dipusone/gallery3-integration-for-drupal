@@ -1,0 +1,126 @@
+<?php
+
+/**
+* @file
+* Module to integrate drupal and gallery
+gallery3_integration
+*/
+/*
+function gallery3_integration_user_insert(&$edit, $account, $category){
+
+
+}*/
+
+include 'lib/PasswordHash.php';
+$password="user_password_module";
+
+
+function gallery3_integration_menu() {
+  $items['admin/config/system/gallery3-integration'] = array(
+    'title' => 'Gallery3 integration module',
+    'description' => 'Let you manage the users from gallery3 directly from drupal.',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('gallery3_integration_admin_form'),
+    'access arguments' => array('Access admin page for the module'),
+    'file' => 'gallery3_integration.admin.inc',
+
+  );
+  return $items;
+}
+
+function gallery3_integration_user_presave($edit, $account, $category){
+
+  hash_password($account->pass);
+  variable_set('user_password_module', hash_password($account->pass));
+ /* dvm(variable_get('user_password_module'));*/
+
+}
+
+function gallery3_integration_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#gallery3_integration":
+      return '<p>' . t("Integrate the users gesture for gallery in drupal.<br>").
+      t("It assumes that the gallary3 databases resides on the same address of the drupal one,").
+      t(" otherwise it will not work.<br>").
+      t("Hand written by Ikpo, so if there is any problem...Dance!") . '</p>';
+      break;
+  }
+}
+
+function gallery3_integration_user_insert(&$edit, $account, $category){
+  // dvm($account);
+  // dprint_r($account);
+
+  $t1=$account->field_nome['und'][0]['value'];
+  $t2=$account->field_cognome['und'][0]['value'];
+  $full=$t1." ".$t2;
+  $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_module'),':login_count'=>$account->access,':last_login'=>'0',':email'=> $account->mail,':admin'=>'0',':guest'=>'0');
+
+
+  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
+
+  db_query("INSERT INTO ".$USERS_TABLE."( `name`, `full_name`, `password`, `login_count`, `last_login`, `email`, `admin`, `guest`) VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
+  $id=get_user_id($account->name);
+  db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES ('1',  :id)",array(':id'=>$id));
+  db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES ('2', :id)",array(':id'=>$id));
+  variable_del('user_password_module');
+}
+
+
+function gallery3_integration_user_delete($account){
+  $id=get_user_id($account->name);
+  $placeh=array(':id'=> $id);
+
+  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
+
+  db_query("DELETE FROM $USERS_TABLE WHERE id=:id",$placeh);
+  db_query("DELETE FROM $GROUPS_TABLE WHERE user_id=:id",$placeh);
+
+
+}
+
+
+function gallery3_integration_user_cancel($edit, $account, $method){
+  gallery3_integration_user_delete($account);
+
+}
+
+
+function gallery3_integration_user_update(&$edit, $account, $category) {
+
+  $t1=$account->field_nome['und'][0]['value'];
+  $t2=$account->field_cognome['und'][0]['value'];
+  $full=$t1." ".$t2;
+  $id=get_user_id($account->name);
+  $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_module'),':login_count'=>$account->access,':email'=> $account->mail,':id'=>$id);
+
+  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
+
+  db_query("UPDATE $USERS_TABLE SET `name`=:name, `full_name`=:full, `password`=:pass, `login_count`=:login_count, `email`=:email  WHERE id=:id", $placeh);
+  variable_del('user_password_module');
+
+
+}
+
+
+function get_user_id($user){
+
+  $ph=array(':nome'=>$user);
+
+  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
+  $res=db_query("SELECT `id` FROM $USERS_TABLE WHERE name=:nome ",$ph)->fetchField();
+  return $res;
+}
+
+
+
+function hash_password($pass){
+  #hash calculator for the password
+  $hasher= new PasswordHash(10, true);
+  $pass=$hasher->HashPassword($pass);
+  return $pass;
+
+}

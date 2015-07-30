@@ -67,7 +67,7 @@ function gallery3_integration_select_default($id){
 	$variable = variable_get('gallery3_integration_role_'.$id);
 
 	if (empty($variable)){
-		return 1;
+		return 'None';
 
 	}
 	return variable_get('gallery3_integration_role_'.$id);

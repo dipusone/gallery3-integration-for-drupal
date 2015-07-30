@@ -25,6 +25,7 @@ function gallery3_integration_menu() {
 
 function gallery3_integration_user_presave($edit, $account, $category){
 
+  // dvm($account);
   gallery3_integration_hash_password($account->pass);
   variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password($account->pass));
  /* dvm(variable_get('user_password_gallery3_hashed'));*/
@@ -46,16 +47,25 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
   $t1=$account->field_nome['und'][0]['value'];
   $t2=$account->field_cognome['und'][0]['value'];
   $full=$t1." ".$t2;
-  $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_gallery3_hashed'),':login_count'=>$account->access,':last_login'=>'0',':email'=> $account->mail,':admin'=>'0',':guest'=>'0');
+  $placeh=array(
+    ':name'=> $account->name,
+    ':full' =>$full,
+    ':pass'=>variable_get('user_password_gallery3_hashed'),
+    ':login_count'=>$account->access,
+    ':last_login'=>'0',
+    ':email'=> $account->mail,
+    ':admin'=>'0',
+    ':guest'=>'0');
 
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
 
   db_query("INSERT INTO ".$USERS_TABLE."( `name`, `full_name`, `password`, `login_count`, `last_login`, `email`, `admin`, `guest`) VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
+
   $id=gallery3_integration_get_user_id($account->name);
-  db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES ('1',  :id)",array(':id'=>$id));
-  db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES ('2', :id)",array(':id'=>$id));
+
+  gallery3_integration_add_groups($account);
   variable_del('user_password_gallery3_hashed');
 }
 
@@ -86,12 +96,22 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
   $t2=$account->field_cognome['und'][0]['value'];
   $full=$t1." ".$t2;
   $id=gallery3_integration_get_user_id($account->name);
-  $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_gallery3_hashed'),':login_count'=>$account->access,':email'=> $account->mail,':id'=>$id);
+  $placeh=array(
+    ':name'=> $account->name,
+    ':full' =>$full,
+    ':pass'=>variable_get('user_password_gallery3_hashed'),
+    ':login_count'=>$account->access,
+    ':email'=> $account->mail,
+    ':id'=>$id
+    );
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
 
   db_query("UPDATE $USERS_TABLE SET `name`=:name, `full_name`=:full, `password`=:pass, `login_count`=:login_count, `email`=:email  WHERE id=:id", $placeh);
+  //TODO: instead of deleting all groups for the user get them and allpy only modifications.
+  db_query("DELETE FROM $GROUPS_TABLE WHERE user_id=:id",array(':id' => $id ));
+  gallery3_integration_add_groups($account);
   variable_del('user_password_gallery3_hashed');
 
 
@@ -125,10 +145,43 @@ function gallery3_integration_get_gallery3_groups(){
   foreach ($results as $group) {
     $groups[$group->id] = $group->name;
   }
+  //Added to let the user not to select and association
+  $groups['None'] = 'None';
 
   return $groups;
 
 
 }
 
-// function gallery3_integration_get
+function gallery3_integration_add_groups($account){
+
+  $g_id=gallery3_integration_get_user_id($account->name);
+
+  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
+
+  //default roles
+  $roles = array('1' => $g_id,
+                 '2' => $g_id);
+
+  //Build a list of role and id
+  //This will also eliminate possible duplicates in roles
+  foreach ($account->roles as $d_id => $d_role) {
+    //for now skip admin role and the base one
+    if($d_role <= 3){
+      countinue;
+    }
+    //FIXME: Error when trying to add the same role
+    $g_role = variable_get('gallery3_integration_role_'."$d_id");
+    if(!empty($g_role) && $g_role !== 'None'){
+      $roles["$g_role"] = $g_id;
+    }
+  }
+
+  foreach ($roles as $g_role => $g_id) {
+    db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES (:role,  :id)",
+        array(':role' => $g_role,':id'=>$g_id));
+
+  }
+
+}

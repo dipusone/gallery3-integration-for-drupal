@@ -22,7 +22,7 @@ function gallery3_integration_admin_form($form, $form_state){
 	$form['gallery3_integration_gallery3_groups'] = array(
 		'#type' => 'textarea',
 		'#title' => t('Gallery3 groups, not editable'),
-		'#rows' => count(get_gallery3_groups())+1,
+		'#rows' => count(gallery3_integration_get_gallery3_groups())+1,
 		'#default_value' => gallery3_integration_build_groups_textfiled(),
 		'#description' => t('This are all the groups presents in the gallery3 db'),
 		'#required' => FALSE,
@@ -43,7 +43,7 @@ function gallery3_integration_admin_form($form, $form_state){
 		'#type' => 'select',
 		'#title' => "Associate $role (id = $id) whit gallery3 role",
 		'#default_value' => gallery3_integration_select_default($id),
-		'#options' => get_gallery3_groups(),
+		'#options' => gallery3_integration_get_gallery3_groups(),
 		'#description' => 'Select a role in gallery3 for '.$role,
 
 
@@ -55,7 +55,7 @@ function gallery3_integration_admin_form($form, $form_state){
 
 function gallery3_integration_build_groups_textfiled(){
 	$groups_string="";
-	foreach (get_gallery3_groups() as $id => $name) {
+	foreach (gallery3_integration_get_gallery3_groups() as $id => $name) {
 		$groups_string .= $name." : ".$id."\n";
 	}
 

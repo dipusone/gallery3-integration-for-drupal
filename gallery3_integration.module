@@ -25,8 +25,8 @@ function gallery3_integration_menu() {
 
 function gallery3_integration_user_presave($edit, $account, $category){
 
-  hash_password($account->pass);
-  variable_set('user_password_gallery3_hashed', hash_password($account->pass));
+  gallery3_integration_hash_password($account->pass);
+  variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password($account->pass));
  /* dvm(variable_get('user_password_gallery3_hashed'));*/
 }
 
@@ -42,10 +42,6 @@ function gallery3_integration_help($path, $arg) {
 }
 
 function gallery3_integration_user_insert(&$edit, $account, $category){
-  dvm(get_gallery3_groups());
-
-
-
 
   $t1=$account->field_nome['und'][0]['value'];
   $t2=$account->field_cognome['und'][0]['value'];
@@ -57,7 +53,7 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
 
   db_query("INSERT INTO ".$USERS_TABLE."( `name`, `full_name`, `password`, `login_count`, `last_login`, `email`, `admin`, `guest`) VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
-  $id=get_user_id($account->name);
+  $id=gallery3_integration_get_user_id($account->name);
   db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES ('1',  :id)",array(':id'=>$id));
   db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES ('2', :id)",array(':id'=>$id));
   variable_del('user_password_gallery3_hashed');
@@ -65,7 +61,7 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
 
 
 function gallery3_integration_user_delete($account){
-  $id=get_user_id($account->name);
+  $id=gallery3_integration_get_user_id($account->name);
   $placeh=array(':id'=> $id);
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
@@ -89,7 +85,7 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
   $t1=$account->field_nome['und'][0]['value'];
   $t2=$account->field_cognome['und'][0]['value'];
   $full=$t1." ".$t2;
-  $id=get_user_id($account->name);
+  $id=gallery3_integration_get_user_id($account->name);
   $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_gallery3_hashed'),':login_count'=>$account->access,':email'=> $account->mail,':id'=>$id);
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
@@ -102,7 +98,7 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
 }
 
 
-function get_user_id($user){
+function gallery3_integration_get_user_id($user){
 
   $ph=array(':nome'=>$user);
 
@@ -111,7 +107,7 @@ function get_user_id($user){
   return $res;
 }
 
-function hash_password($pass){
+function gallery3_integration_hash_password($pass){
   #hash calculator for the password
   $hasher= new PasswordHash(10, true);
   $pass=$hasher->HashPassword($pass);
@@ -120,7 +116,7 @@ function hash_password($pass){
 }
 
 
-function get_gallery3_groups(){
+function gallery3_integration_get_gallery3_groups(){
 
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
   $results = db_query("SELECT `id`, name from $GROUPS_TABLE ORDER BY name")->fetchAll();

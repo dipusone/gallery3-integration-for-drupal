@@ -13,7 +13,7 @@ function gallery3_integration_admin_form($form, $form_state){
 		'#required' => TRUE,
 
 	);
-	dprint_r($form);
+	// dprint_r($form);
 
 	return system_settings_form($form);
 

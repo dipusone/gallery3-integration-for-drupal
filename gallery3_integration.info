@@ -2,4 +2,4 @@ name= Gallery3 integration
 description= This module give an integration between drupal and gallery3.
 core= 7.x
 
-configure = admin/config/system/gallery3_integration
+configure = admin/config/people/gallery3_integration

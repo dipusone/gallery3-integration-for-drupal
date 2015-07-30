@@ -8,4 +8,4 @@ What it does not:
 - Managing groups creations
 
 TODOS:
--add the group management
+- add the group management

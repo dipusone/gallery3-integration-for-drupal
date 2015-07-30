@@ -111,25 +111,6 @@ function get_user_id($user){
   return $res;
 }
 
-function get_gallery3_groups(){
-
-  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
-
-
-  $results = db_query("SELECT `id`, name from $GROUPS_TABLE")->fetchAll();
-
-  // dvm($)
-  $groups = array();
-  foreach ($results as $group) {
-    $groups[$group->name] = $group->id;
-  }
-
-  return $groups;
-
-
-}
-
-
 function hash_password($pass){
   #hash calculator for the password
   $hasher= new PasswordHash(10, true);
@@ -137,3 +118,21 @@ function hash_password($pass){
   return $pass;
 
 }
+
+
+function get_gallery3_groups(){
+
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
+  $results = db_query("SELECT `id`, name from $GROUPS_TABLE ORDER BY name")->fetchAll();
+
+  $groups = array();
+  foreach ($results as $group) {
+    $groups[$group->id] = $group->name;
+  }
+
+  return $groups;
+
+
+}
+
+// function gallery3_integration_get

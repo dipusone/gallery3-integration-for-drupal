@@ -28,7 +28,6 @@ function gallery3_integration_user_presave($edit, $account, $category){
   hash_password($account->pass);
   variable_set('user_password_gallery3_hashed', hash_password($account->pass));
  /* dvm(variable_get('user_password_gallery3_hashed'));*/
-
 }
 
 function gallery3_integration_help($path, $arg) {
@@ -43,8 +42,10 @@ function gallery3_integration_help($path, $arg) {
 }
 
 function gallery3_integration_user_insert(&$edit, $account, $category){
-  // dvm($account);
-  // dprint_r($account);
+  dvm(get_gallery3_groups());
+
+
+
 
   $t1=$account->field_nome['und'][0]['value'];
   $t2=$account->field_cognome['und'][0]['value'];
@@ -110,6 +111,23 @@ function get_user_id($user){
   return $res;
 }
 
+function get_gallery3_groups(){
+
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
+
+
+  $results = db_query("SELECT `id`, name from $GROUPS_TABLE")->fetchAll();
+
+  // dvm($)
+  $groups = array();
+  foreach ($results as $group) {
+    $groups[$group->name] = $group->id;
+  }
+
+  return $groups;
+
+
+}
 
 
 function hash_password($pass){

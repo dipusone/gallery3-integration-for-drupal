@@ -6,4 +6,3 @@ What it does:
 What it does not:
 - Managing the groups
 
-For now it do not uses the gallery3 REST apy, even if it is planned to modify the plugin to use them.

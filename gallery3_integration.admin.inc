@@ -11,7 +11,7 @@ function gallery3_integration_admin_form($form, $form_state){
 		'#maxlength' => 30,
 		'#default_value'=> variable_get('gallery3_integration_db_prefix','g3_'),
 		'#description' => t('The prefix of the gallery3 tables in the database.'.
-			'Remember to add any underscore!'),
+							'Remember to add any underscore!'),
 		'#required' => TRUE,
 
 	);
@@ -19,34 +19,49 @@ function gallery3_integration_admin_form($form, $form_state){
 
 	//TODO: find a better way to show groups from gallery
 
-	$form['gallery3_integration_gallery3_groups'] = array(
-		'#type' => 'textarea',
-		'#title' => t('Gallery3 groups, not editable'),
-		'#rows' => count(gallery3_integration_get_gallery3_groups())+1,
-		'#default_value' => gallery3_integration_build_groups_textfiled(),
-		'#description' => t('This are all the groups presents in the gallery3 db'),
-		'#required' => FALSE,
-		// '#disabled' => TRUE,
+	// $form['gallery3_integration_gallery3_groups'] = array(
+	// 	'#type' => 'textarea',
+	// 	'#title' => t('Gallery3 groups, not editable'),
+	// 	'#rows' => count(gallery3_integration_get_gallery3_groups())+1,
+	// 	'#default_value' => gallery3_integration_build_groups_textfiled(),
+	// 	'#description' => t('This are all the groups presents in the gallery3 db'),
+	// 	'#required' => FALSE,
+	// 	// '#disabled' => TRUE,
 
 
-	);
+	// );
 
 	$drupal_roles = user_roles();
 	asort($drupal_roles);
+
+	$form['gallery3_integration_manage_groups'] = array(
+		'#type' => 'checkbox',
+		'#title' => t('Manage the roles in Gallery3'),
+		'#description' => t('Select to let the plugin manage the role creation in Gallery3 from drupal'),
+		'#default_value' => gallery3_integration_checkbox_default(),
+		);
+
+
+	$form['gallery3_integration_roles'] = array(
+		'#type' => 'fieldset',
+		'#title' => t('Roles associations'),
+		'#description' => t('In this section you will be able associate a Drupal role with the corresponding Gallery role'),
+		'#collapsible' => TRUE,
+		'#collapsed' => FALSE,
+
+		);
 
 	foreach ($drupal_roles as $id => $role) {
 		//Skip admin and anonimous user and autenticated, this will be added automatically
 		if ($id <= 3){
 			continue;
 		}
-		$form['gallery3_integration_role_'.$id] = array(
+		$form['gallery3_integration_roles']['gallery3_integration_role_'.$id] = array(
 		'#type' => 'select',
 		'#title' => "Associate $role (id = $id) whit gallery3 role",
 		'#default_value' => gallery3_integration_select_default($id),
 		'#options' => gallery3_integration_get_gallery3_groups(),
 		'#description' => 'Select a role in gallery3 for '.$role,
-
-
 		);
 	}
 	return system_settings_form($form);
@@ -68,8 +83,17 @@ function gallery3_integration_select_default($id){
 
 	if (empty($variable)){
 		return 'None';
-
 	}
+
 	return variable_get('gallery3_integration_role_'.$id);
 }
 
+function gallery3_integration_checkbox_default(){
+	$variable = variable_get('gallery3_integration_manage_groups');
+
+	if(!empty($variable)){
+		return TRUE;
+	}
+	return FALSE;
+
+}

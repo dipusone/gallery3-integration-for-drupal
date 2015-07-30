@@ -13,7 +13,7 @@ include 'lib/PasswordHash.php';
 function gallery3_integration_menu() {
   $items['admin/config/people/gallery3-integration'] = array(
     'title' => 'Gallery3 integration module',
-    'description' => 'Let you manage the users from gallery3 directly from drupal.',
+    'description' => 'Let you manage the users and groups from gallery3 directly from drupal.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('gallery3_integration_admin_form'),
     'access arguments' => array('Access admin page for the module'),
@@ -34,7 +34,7 @@ function gallery3_integration_user_presave($edit, $account, $category){
 function gallery3_integration_help($path, $arg) {
   switch ($path) {
     case "admin/help#gallery3_integration":
-      return '<p>' . t("Integrate the users gesture for gallery in drupal.<br>").
+      return '<p>' . t("Integrate the users and groups management for gallery in drupal.<br>").
       t("It assumes that the gallary3 databases resides on the same address of the drupal one,").
       t(" otherwise it will not work.<br>").
       t("Hand written by Ikpo, so if there is any problem...Dance!") . '</p>';
@@ -61,7 +61,7 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
 
-  db_query("INSERT INTO ".$USERS_TABLE."( `name`, `full_name`, `password`, `login_count`, `last_login`, `email`, `admin`, `guest`) VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
+  db_query("INSERT INTO $USERS_TABLE ( `name`, `full_name`, `password`, `login_count`, `last_login`, `email`, `admin`, `guest`) VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
 
   $id=gallery3_integration_get_user_id($account->name);
 
@@ -80,7 +80,7 @@ function gallery3_integration_user_delete($account){
   db_query("DELETE FROM $USERS_TABLE WHERE id=:id",$placeh);
   db_query("DELETE FROM $GROUPS_TABLE WHERE user_id=:id",$placeh);
 
-
+  variable_del('user_password_gallery3_hashed');
 }
 
 
@@ -116,6 +116,45 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
 
 
 }
+
+function gallery3_integration_user_role_insert($role){
+  //If it is asked not to manage the groups or the group already exist in gallery3 return
+
+  if(!variable_get('gallery3_integration_manage_groups') || gallery3_interation_get_group_id($role->name)){
+    return;
+  }
+
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
+  db_query("INSERT INTO ".$GROUPS_TABLE." ( `name`) VALUES ( :name)",array(':name' => $role->name));
+}
+
+function gallery3_integration_user_role_delete($role){
+
+  $id = gallery3_interation_get_group_id($role->name);
+  //If it is asked not to manage groups or the group do not exist in gallery3 return
+  if(!variable_get('gallery3_integration_manage_groups') || !$id){
+    return;
+  }
+
+  $GROUPS_USERS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
+  //Remove all associations user->groups
+  db_query("DELETE FROM $GROUPS_USERS_TABLE WHERE group_id=:id",array(':id' => $id ));
+
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
+  db_query("DELETE FROM $GROUPS_TABLE WHERE id=:id",array(':id' => $id ));
+
+
+
+}
+
+function gallery3_interation_get_group_id($group){
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
+
+  $res=db_query("SELECT `id` FROM $GROUPS_TABLE WHERE name=:nome ",array(':nome' => $group))->fetchField();
+  return $res;
+
+}
+
 
 
 function gallery3_integration_get_user_id($user){

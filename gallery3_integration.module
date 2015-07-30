@@ -3,13 +3,9 @@
 /**
 * @file
 * Module to integrate drupal and gallery
-gallery3_integration
+* Author: Dipusone
 */
-/*
-function gallery3_integration_user_insert(&$edit, $account, $category){
 
-
-}*/
 
 include 'lib/PasswordHash.php';
 $password="user_password_module";

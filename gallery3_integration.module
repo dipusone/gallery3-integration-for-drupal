@@ -8,7 +8,6 @@
 
 
 include 'lib/PasswordHash.php';
-$password="user_password_module";
 
 
 function gallery3_integration_menu() {
@@ -27,8 +26,8 @@ function gallery3_integration_menu() {
 function gallery3_integration_user_presave($edit, $account, $category){
 
   hash_password($account->pass);
-  variable_set('user_password_module', hash_password($account->pass));
- /* dvm(variable_get('user_password_module'));*/
+  variable_set('user_password_gallery3_hashed', hash_password($account->pass));
+ /* dvm(variable_get('user_password_gallery3_hashed'));*/
 
 }
 
@@ -50,7 +49,7 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
   $t1=$account->field_nome['und'][0]['value'];
   $t2=$account->field_cognome['und'][0]['value'];
   $full=$t1." ".$t2;
-  $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_module'),':login_count'=>$account->access,':last_login'=>'0',':email'=> $account->mail,':admin'=>'0',':guest'=>'0');
+  $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_gallery3_hashed'),':login_count'=>$account->access,':last_login'=>'0',':email'=> $account->mail,':admin'=>'0',':guest'=>'0');
 
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
@@ -60,7 +59,7 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
   $id=get_user_id($account->name);
   db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES ('1',  :id)",array(':id'=>$id));
   db_query("INSERT INTO $GROUPS_TABLE (`group_id`, `user_id`) VALUES ('2', :id)",array(':id'=>$id));
-  variable_del('user_password_module');
+  variable_del('user_password_gallery3_hashed');
 }
 
 
@@ -90,13 +89,13 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
   $t2=$account->field_cognome['und'][0]['value'];
   $full=$t1." ".$t2;
   $id=get_user_id($account->name);
-  $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_module'),':login_count'=>$account->access,':email'=> $account->mail,':id'=>$id);
+  $placeh=array(':name'=> $account->name,':full' =>$full,':pass'=>variable_get('user_password_gallery3_hashed'),':login_count'=>$account->access,':email'=> $account->mail,':id'=>$id);
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
 
   db_query("UPDATE $USERS_TABLE SET `name`=:name, `full_name`=:full, `password`=:pass, `login_count`=:login_count, `email`=:email  WHERE id=:id", $placeh);
-  variable_del('user_password_module');
+  variable_del('user_password_gallery3_hashed');
 
 
 }

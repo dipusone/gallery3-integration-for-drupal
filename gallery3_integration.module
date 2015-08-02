@@ -6,9 +6,6 @@
 * Author: Dipusone
 */
 
-//TODO: add the management of the admin of gallery in drupal.
-//Setting are yet there (check gallery3_integration_manage_admin ), we need functions.
-
 
 include 'lib/PasswordHash.php';
 
@@ -41,11 +38,7 @@ function gallery3_integration_help($path, $arg) {
 
 function gallery3_integration_user_presave($edit, $account, $category){
 
-  //FIXME: i think the password is not obtained inplaintext on user update!
-  //Possible fix: get in user_update the value from $_POST['pass']['pass1']
-  gallery3_integration_hash_password($account->pass);
   variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password($account->pass));
- /* dvm(variable_get('user_password_gallery3_hashed'));*/
 }
 
 function gallery3_integration_user_insert(&$edit, $account, $category){
@@ -103,6 +96,17 @@ function gallery3_integration_user_cancel($edit, $account, $method){
 
 
 function gallery3_integration_user_update(&$edit, $account, $category) {
+  //Since gallery3_integration_user_presave can get the paintext password the it from the $_POST part.
+  //This could be broken on future update of drupal!
+  //TODO: change the way i get password from $_POST['pass']['pass1'] to hook_field_attach_submit
+  /**
+   * Could use:
+   * hook_field_attach_submit() worked. The new pass was in $form["#user"]["pass"]
+   * check $entity_type == 'user'
+   *
+   *
+   **/
+  variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password( $_POST['pass']['pass1']));
 
 
   $t1=$account->field_nome['und'][0]['value'];

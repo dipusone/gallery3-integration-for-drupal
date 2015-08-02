@@ -76,6 +76,8 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
 
 
 function gallery3_integration_user_delete($account){
+  //FIXME: I've to check what to do we a user is deleted an he/she has album associated.
+  //There should be no problems but could be better to associate album whit an administrator
   $id=gallery3_integration_get_user_id($account->name);
   $placeh=array(':id'=> $id);
 
@@ -108,7 +110,8 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
    **/
   variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password( $_POST['pass']['pass1']));
 
-
+  //TODO: mathi this part a variable thath the user can set.
+  //Maybe using variables variable http://php.net/manual/en/language.variables.variable.php
   $t1=$account->field_nome['und'][0]['value'];
   $t2=$account->field_cognome['und'][0]['value'];
   $full=$t1." ".$t2;

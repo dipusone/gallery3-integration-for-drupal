@@ -32,11 +32,11 @@ function gallery3_integration_admin_form($form, $form_state){
 
 	$form['gallery3_integration_manage_groups'] = array(
 		'#type' => 'checkbox',
-		'#title' => t('Manage the roles in Gallery3'),
-		'#description' => t('Set to let the plugin manage the role creation in Gallery3 from drupal'),
+		'#title' => t('Manage the roles in Gallery3 from drupal'),
+		'#description' => t('Set to let the plugin manage the role CRUD in Gallery3 from drupal.'.
+			'<br>This will also enable the role managment per user.'),
 		'#default_value' => gallery3_integration_checkbox_default(),
 		);
-
 	//Get drupal roles and sort them, this value is used later.
 	$drupal_roles = user_roles();
 	asort($drupal_roles);
@@ -44,11 +44,12 @@ function gallery3_integration_admin_form($form, $form_state){
 	$form['gallery3_integration_roles'] = array(
 		'#type' => 'fieldset',
 		'#title' => t('Roles associations'),
-		'#description' => t('In this section you will be able associate a Drupal role with the corresponding Gallery role'.
-			'</br>Enabled only if <b><i>Manage the roles in Gallery3</i></b> is selected.'),
+		'#description' => t('In this section you will be able associate a Drupal role with the corresponding Gallery role'),
 		'#collapsible' => TRUE,
 		'#collapsed' => !variable_get('gallery3_integration_manage_groups'),
 		);
+
+
 
 	foreach ($drupal_roles as $id => $role) {
 		//Skip admin and anonimous user and autenticated, this will be added automatically
@@ -61,7 +62,6 @@ function gallery3_integration_admin_form($form, $form_state){
 		'#default_value' => gallery3_integration_select_default($id),
 		'#options' => gallery3_integration_get_gallery3_groups(),
 		'#description' => 'Select a role in gallery3 for '.$role,
-		'#disabled' => !variable_get('gallery3_integration_manage_groups'),
 		);
 	}
 

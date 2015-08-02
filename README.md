@@ -11,5 +11,8 @@ What it does not:
 
 
 TODOS:
-- Add the admin management part.
+- Add the admin management part.(Work in progress)
 - Dunno, maybe find a way to let the user select the association drupal_role => gallery_group ad role creation.
+
+FIXME:
+- There is a bug on user edit, the password is passed in hashed an i've to find a way to get it in plaintext.

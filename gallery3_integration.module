@@ -41,7 +41,8 @@ function gallery3_integration_help($path, $arg) {
 
 function gallery3_integration_user_presave($edit, $account, $category){
 
-  //dvm($account);
+  //FIXME: i think the password is not obtained inplaintext on user update!
+  //Possible fix: get in user_update the value from $_POST['pass']['pass1']
   gallery3_integration_hash_password($account->pass);
   variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password($account->pass));
  /* dvm(variable_get('user_password_gallery3_hashed'));*/
@@ -69,8 +70,14 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
   db_query("INSERT INTO $USERS_TABLE ( `name`, `full_name`, `password`, `login_count`, `last_login`, `email`, `admin`, `guest`) VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
 
   $id=gallery3_integration_get_user_id($account->name);
-
   gallery3_integration_add_groups($account);
+  //If the user is set to be admin in gallery do it
+  if(variable_get('gallery3_integration_manage_admin')) {
+    if(array_key_exists(variable_get('gallery3_integration_admin_role'), $account->roles)){
+      $g_id = gallery3_integration_get_user_id($account->name);
+      gallery3_integration_set_gallery_admin($g_id);
+    }
+  }
   variable_del('user_password_gallery3_hashed');
 }
 
@@ -97,6 +104,7 @@ function gallery3_integration_user_cancel($edit, $account, $method){
 
 function gallery3_integration_user_update(&$edit, $account, $category) {
 
+
   $t1=$account->field_nome['und'][0]['value'];
   $t2=$account->field_cognome['und'][0]['value'];
   $full=$t1." ".$t2;
@@ -117,11 +125,24 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
   //TODO: instead of deleting all groups for the user get them and apply only modifications.
   db_query("DELETE FROM $GROUPS_TABLE WHERE user_id=:id",array(':id' => $id ));
   gallery3_integration_add_groups($account);
+  //TODO: refacto this part to be included in gallery3_integration_set_gallery_admin?
+  if(variable_get('gallery3_integration_manage_admin')) {
+    $g_id = gallery3_integration_get_user_id($account->name);
+    if(array_key_exists(variable_get('gallery3_integration_admin_role'), $account->roles)){
+      gallery3_integration_set_gallery_admin($g_id);
+    }else{
+      gallery3_integration_set_gallery_admin($g_id, FALSE);
+    }
+  }
   variable_del('user_password_gallery3_hashed');
 
 
 }
 
+/**
+ *Hook called during role creation
+ *
+ **/
 function gallery3_integration_user_role_insert($role){
   //If it is asked not to manage the groups or the group already exist in gallery3 return
 
@@ -132,6 +153,11 @@ function gallery3_integration_user_role_insert($role){
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
   db_query("INSERT INTO ".$GROUPS_TABLE." ( `name`) VALUES ( :name)",array(':name' => $role->name));
 }
+
+/**
+ * Hook called during role deletion
+ *
+ **/
 
 function gallery3_integration_user_role_delete($role){
 
@@ -147,8 +173,6 @@ function gallery3_integration_user_role_delete($role){
 
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
   db_query("DELETE FROM $GROUPS_TABLE WHERE id=:id",array(':id' => $id ));
-
-
 
 }
 
@@ -198,6 +222,11 @@ function gallery3_integration_get_gallery3_groups(){
 }
 
 function gallery3_integration_add_groups($account){
+  //TODO: move this check outside this function
+  //For now this is a quickfix.
+  if(!variable_get('gallery3_integration_manage_groups')){
+    return;
+  }
 
   $g_id=gallery3_integration_get_user_id($account->name);
 
@@ -215,7 +244,6 @@ function gallery3_integration_add_groups($account){
     if($d_role <= 3){
       countinue;
     }
-    //FIXME: Error when trying to add the same role
     $g_role = variable_get('gallery3_integration_role_'."$d_id");
     if(!empty($g_role) && $g_role !== 'None'){
       $roles["$g_role"] = $g_id;
@@ -227,5 +255,18 @@ function gallery3_integration_add_groups($account){
         array(':role' => $g_role,':id'=>$g_id));
 
   }
+
+}
+
+function gallery3_integration_set_gallery_admin($g_id, $set_admin=TRUE){
+  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
+  $placeh = array(':admin' =>  $set_admin ? 1 : 0,
+                  ':id' => $g_id,
+                  );
+
+  db_query("UPDATE $USERS_TABLE SET `admin`=:admin  WHERE id=:id", $placeh);
+
+
+
 
 }

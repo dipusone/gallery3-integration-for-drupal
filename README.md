@@ -11,4 +11,5 @@ What it does not:
 
 
 TODOS:
+- Add the admin management part.
 - Dunno, maybe find a way to let the user select the association drupal_role => gallery_group ad role creation.

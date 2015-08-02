@@ -15,9 +15,8 @@ function gallery3_integration_admin_form($form, $form_state){
 		'#required' => TRUE,
 
 	);
-	// dprint_r($form);
 
-	//TODO: find a better way to show groups from gallery
+	//Only for debug purpose
 
 	// $form['gallery3_integration_gallery3_groups'] = array(
 	// 	'#type' => 'textarea',
@@ -31,24 +30,24 @@ function gallery3_integration_admin_form($form, $form_state){
 
 	// );
 
-	$drupal_roles = user_roles();
-	asort($drupal_roles);
-
 	$form['gallery3_integration_manage_groups'] = array(
 		'#type' => 'checkbox',
 		'#title' => t('Manage the roles in Gallery3'),
-		'#description' => t('Select to let the plugin manage the role creation in Gallery3 from drupal'),
+		'#description' => t('Set to let the plugin manage the role creation in Gallery3 from drupal'),
 		'#default_value' => gallery3_integration_checkbox_default(),
 		);
 
+	//Get drupal roles and sort them, this value is used later.
+	$drupal_roles = user_roles();
+	asort($drupal_roles);
 
 	$form['gallery3_integration_roles'] = array(
 		'#type' => 'fieldset',
 		'#title' => t('Roles associations'),
-		'#description' => t('In this section you will be able associate a Drupal role with the corresponding Gallery role'),
+		'#description' => t('In this section you will be able associate a Drupal role with the corresponding Gallery role'.
+			'</br>Enabled only if <b><i>Manage the roles in Gallery3</i></b> is selected.'),
 		'#collapsible' => TRUE,
-		'#collapsed' => FALSE,
-
+		'#collapsed' => !variable_get('gallery3_integration_manage_groups'),
 		);
 
 	foreach ($drupal_roles as $id => $role) {
@@ -62,8 +61,37 @@ function gallery3_integration_admin_form($form, $form_state){
 		'#default_value' => gallery3_integration_select_default($id),
 		'#options' => gallery3_integration_get_gallery3_groups(),
 		'#description' => 'Select a role in gallery3 for '.$role,
+		'#disabled' => !variable_get('gallery3_integration_manage_groups'),
 		);
 	}
+
+
+	$form['gallery3_integration_gallery_admin'] = array(
+		'#type' => 'fieldset',
+		'#title' => t('Gallery3 admin Managment'),
+		'#description' => t('In this section you will be able associate a Gallery Administrator with a drupal role.'),
+		'#collapsible' => TRUE,
+		'#collapsed' => !variable_get('gallery3_integration_manage_admin'),
+		);
+
+	$form['gallery3_integration_gallery_admin']['gallery3_integration_manage_admin'] = array(
+		'#type' => 'checkbox',
+		'#title' => t('Manage admin in gallery'),
+		'#description' =>t('Set to let the plugin manage the admin role in Gallery3  from drupal'),
+		'#default_value' => gallery3_integration_checkbox_admin_default(),
+	);
+
+
+
+	$form['gallery3_integration_gallery_admin']['gallery3_integration_admin_role'] = array(
+		'#type' => 'select',
+		'#title' => "Associate a drupal role whit gallery3 admin",
+		'#default_value' => gallery3_integration_select_admin_default(), #should be the admin id.
+		'#options' => $drupal_roles,
+		'#description' => t('Select a role in drupal for admin in gallery3, this is enabled only if <b><i>Manage admin in gallery</i></b> is selected'),
+		'#disabled' => !variable_get('gallery3_integration_manage_admin'),
+	);
+
 	return system_settings_form($form);
 
 }
@@ -95,5 +123,24 @@ function gallery3_integration_checkbox_default(){
 		return TRUE;
 	}
 	return FALSE;
+
+}
+
+function gallery3_integration_select_admin_default(){
+	$variable = variable_get('gallery3_integration_admin_role');
+	if (empty($variable)){
+		return '3';#Admin role
+	}
+	return $variable;
+}
+
+function gallery3_integration_checkbox_admin_default(){
+	$variable = variable_get('gallery3_integration_manage_admin');
+
+	if(!empty($variable)){
+		return TRUE;
+	}
+	return FALSE;
+
 
 }

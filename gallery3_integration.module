@@ -6,6 +6,9 @@
 * Author: Dipusone
 */
 
+//TODO: add the management of the admin of gallery in drupal.
+//Setting are yet there (check gallery3_integration_manage_admin ), we need functions.
+
 
 include 'lib/PasswordHash.php';
 
@@ -23,13 +26,6 @@ function gallery3_integration_menu() {
   return $items;
 }
 
-function gallery3_integration_user_presave($edit, $account, $category){
-
-  //dvm($account);
-  gallery3_integration_hash_password($account->pass);
-  variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password($account->pass));
- /* dvm(variable_get('user_password_gallery3_hashed'));*/
-}
 
 function gallery3_integration_help($path, $arg) {
   switch ($path) {
@@ -40,6 +36,15 @@ function gallery3_integration_help($path, $arg) {
       t("Hand written by Ikpo, so if there is any problem...Dance!") . '</p>';
       break;
   }
+}
+
+
+function gallery3_integration_user_presave($edit, $account, $category){
+
+  //dvm($account);
+  gallery3_integration_hash_password($account->pass);
+  variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password($account->pass));
+ /* dvm(variable_get('user_password_gallery3_hashed'));*/
 }
 
 function gallery3_integration_user_insert(&$edit, $account, $category){
@@ -109,7 +114,7 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
 
   db_query("UPDATE $USERS_TABLE SET `name`=:name, `full_name`=:full, `password`=:pass, `login_count`=:login_count, `email`=:email  WHERE id=:id", $placeh);
-  //TODO: instead of deleting all groups for the user get them and allpy only modifications.
+  //TODO: instead of deleting all groups for the user get them and apply only modifications.
   db_query("DELETE FROM $GROUPS_TABLE WHERE user_id=:id",array(':id' => $id ));
   gallery3_integration_add_groups($account);
   variable_del('user_password_gallery3_hashed');

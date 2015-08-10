@@ -12,7 +12,7 @@ include 'lib/PasswordHash.php';
 
 function gallery3_integration_menu() {
   $items['admin/config/people/gallery3-integration'] = array(
-    'title' => 'Gallery3 integration module',
+    'title' => 'Gallery3 integration',
     'description' => 'Let you manage the users and groups from gallery3 directly from drupal.',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('gallery3_integration_admin_form'),
@@ -41,11 +41,12 @@ function gallery3_integration_user_presave($edit, $account, $category){
   variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password($account->pass));
 }
 
+
 function gallery3_integration_user_insert(&$edit, $account, $category){
 
-  $t1=$account->field_nome['und'][0]['value'];
-  $t2=$account->field_cognome['und'][0]['value'];
-  $full=$t1." ".$t2;
+  $first_name=$account->field_nome['und'][0]['value'];
+  $second_namevoglio=$account->field_cognome['und'][0]['value'];
+  $full=$first_name." ".$second_name;
   $placeh=array(
     ':name'=> $account->name,
     ':full' =>$full,
@@ -93,12 +94,11 @@ function gallery3_integration_user_delete($account){
 
 function gallery3_integration_user_cancel($edit, $account, $method){
   gallery3_integration_user_delete($account);
-
 }
 
 
 function gallery3_integration_user_update(&$edit, $account, $category) {
-  //Since gallery3_integration_user_presave can get the paintext password the it from the $_POST part.
+  //Since gallery3_integration_user_presave can get the plaintext password the it from the $_POST part.
   //This could be broken on future update of drupal!
   //TODO: change the way i get password from $_POST['pass']['pass1'] to hook_field_attach_submit
   /**
@@ -108,13 +108,14 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
    *
    *
    **/
+  //FIXME: check if the password is not changed and in this case do not edit it.
   variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password( $_POST['pass']['pass1']));
 
-  //TODO: mathi this part a variable thath the user can set.
+  //TODO: make this part a variable that the user can set.
   //Maybe using variables variable http://php.net/manual/en/language.variables.variable.php
-  $t1=$account->field_nome['und'][0]['value'];
-  $t2=$account->field_cognome['und'][0]['value'];
-  $full=$t1." ".$t2;
+  $first_name=$account->field_nome['und'][0]['value'];
+  $second_name=$account->field_cognome['und'][0]['value'];
+  $full=$first_name." ".$second_name;
   $id=gallery3_integration_get_user_id($account->name);
   $placeh=array(
     ':name'=> $account->name,
@@ -132,19 +133,17 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
   //TODO: instead of deleting all groups for the user get them and apply only modifications.
   db_query("DELETE FROM $GROUPS_TABLE WHERE user_id=:id",array(':id' => $id ));
   gallery3_integration_add_groups($account);
-  //TODO: refacto this part to be included in gallery3_integration_set_gallery_admin?
+
+  //If the plugin is enabled to manage tha gallery admin do it.
   if(variable_get('gallery3_integration_manage_admin')) {
     $g_id = gallery3_integration_get_user_id($account->name);
-    if(array_key_exists(variable_get('gallery3_integration_admin_role'), $account->roles)){
-      gallery3_integration_set_gallery_admin($g_id);
-    }else{
-      gallery3_integration_set_gallery_admin($g_id, FALSE);
-    }
+    $is_gallery_admin = array_key_exists(variable_get('gallery3_integration_admin_role'),
+                                         $account->roles);
+    gallery3_integration_set_gallery_admin($g_id, $is_gallery_admin);
   }
   variable_del('user_password_gallery3_hashed');
-
-
 }
+
 
 /**
  *Hook called during role creation
@@ -160,6 +159,7 @@ function gallery3_integration_user_role_insert($role){
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
   db_query("INSERT INTO ".$GROUPS_TABLE." ( `name`) VALUES ( :name)",array(':name' => $role->name));
 }
+
 
 /**
  * Hook called during role deletion
@@ -192,7 +192,6 @@ function gallery3_interation_get_group_id($group){
 }
 
 
-
 function gallery3_integration_get_user_id($user){
 
   $ph=array(':nome'=>$user);
@@ -202,12 +201,12 @@ function gallery3_integration_get_user_id($user){
   return $res;
 }
 
+
 function gallery3_integration_hash_password($pass){
   #hash calculator for the password
   $hasher= new PasswordHash(10, true);
   $pass=$hasher->HashPassword($pass);
   return $pass;
-
 }
 
 
@@ -224,9 +223,8 @@ function gallery3_integration_get_gallery3_groups(){
   $groups['None'] = 'None';
 
   return $groups;
-
-
 }
+
 
 function gallery3_integration_add_groups($account){
   //TODO: move this check outside this function
@@ -265,6 +263,7 @@ function gallery3_integration_add_groups($account){
 
 }
 
+
 function gallery3_integration_set_gallery_admin($g_id, $set_admin=TRUE){
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $placeh = array(':admin' =>  $set_admin ? 1 : 0,
@@ -272,8 +271,5 @@ function gallery3_integration_set_gallery_admin($g_id, $set_admin=TRUE){
                   );
 
   db_query("UPDATE $USERS_TABLE SET `admin`=:admin  WHERE id=:id", $placeh);
-
-
-
 
 }

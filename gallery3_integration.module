@@ -61,10 +61,20 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
 
-  db_query("INSERT INTO $USERS_TABLE ( `name`, `full_name`, `password`, `login_count`, `last_login`, `email`, `admin`, `guest`) VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
+  db_query("INSERT INTO $USERS_TABLE ( `name`,
+                                       `full_name`,
+                                       `password`,
+                                       `login_count`,
+                                       `last_login`,
+                                       `email`,
+                                       `admin`,
+                                       `guest`)
+            VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
 
   $id=gallery3_integration_get_user_id($account->name);
-  gallery3_integration_add_groups($account);
+
+    gallery3_integration_add_groups($account,variable_get('gallery3_integration_manage_groups'));
+
   //If the user is set to be admin in gallery do it
   if(variable_get('gallery3_integration_manage_admin')) {
     if(array_key_exists(variable_get('gallery3_integration_admin_role'), $account->roles)){
@@ -108,31 +118,50 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
    *
    *
    **/
-  //FIXME: check if the password is not changed and in this case do not edit it.
+
   variable_set('user_password_gallery3_hashed', gallery3_integration_hash_password( $_POST['pass']['pass1']));
 
-  //TODO: make this part a variable that the user can set.
+
   //Maybe using variables variable http://php.net/manual/en/language.variables.variable.php
   $first_name=$account->field_nome['und'][0]['value'];
   $second_name=$account->field_cognome['und'][0]['value'];
   $full=$first_name." ".$second_name;
   $id=gallery3_integration_get_user_id($account->name);
+
+
+  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
+
+
+  $query = "UPDATE $USERS_TABLE SET `name`=:name,
+                                    `full_name`=:full,
+                                    `login_count`=:login_count,
+                                    `email`=:email ";
   $placeh=array(
     ':name'=> $account->name,
     ':full' =>$full,
-    ':pass'=>variable_get('user_password_gallery3_hashed'),
     ':login_count'=>$account->access,
     ':email'=> $account->mail,
     ':id'=>$id
     );
 
-  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
-  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
+  //check if the password is not changed and in this case do not edit it.
+  //If the account password has been changed add to the query and the placeholder array
+  //the values
+  if($account->original->pass != $account->pass){
+    $query .= ', `password`=:pass ';
+    $placeh[':pass'] = variable_get('user_password_gallery3_hashed');
+  }
+  //add the final where clause to query
+  $query .=  'WHERE id=:id';
 
-  db_query("UPDATE $USERS_TABLE SET `name`=:name, `full_name`=:full, `password`=:pass, `login_count`=:login_count, `email`=:email  WHERE id=:id", $placeh);
-  //TODO: instead of deleting all groups for the user get them and apply only modifications.
+  db_query($query, $placeh);
+  //TODO: instead of deleting all groups for the user get them and apply only modifications?
   db_query("DELETE FROM $GROUPS_TABLE WHERE user_id=:id",array(':id' => $id ));
-  gallery3_integration_add_groups($account);
+
+
+  gallery3_integration_add_groups($account,variable_get('gallery3_integration_manage_groups'));
+
 
   //If the plugin is enabled to manage tha gallery admin do it.
   if(variable_get('gallery3_integration_manage_admin')) {
@@ -225,33 +254,34 @@ function gallery3_integration_get_gallery3_groups(){
   return $groups;
 }
 
-
-function gallery3_integration_add_groups($account){
-  //TODO: move this check outside this function
-  //For now this is a quickfix.
-  if(!variable_get('gallery3_integration_manage_groups')){
-    return;
-  }
-
+/**
+ *This function will add to the user in gallery3 all the groups (s)he has in drupal
+ *
+ * @param account $account the user account from drupal.
+ * @param bool $extended_groups if the function ha to add all the groups to the user apart from default ones.
+ *
+ **/
+function gallery3_integration_add_groups($account, $extended_groups=FALSE){
   $g_id=gallery3_integration_get_user_id($account->name);
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
-
   //default roles
   $roles = array('1' => $g_id,
                  '2' => $g_id);
 
   //Build a list of role and id
   //This will also eliminate possible duplicates in roles
-  foreach ($account->roles as $d_id => $d_role) {
-    //for now skip admin role and the base one
-    if($d_role <= 3){
-      countinue;
-    }
-    $g_role = variable_get('gallery3_integration_role_'."$d_id");
-    if(!empty($g_role) && $g_role !== 'None'){
-      $roles["$g_role"] = $g_id;
+  if($extended_groups){
+    foreach ($account->roles as $d_id => $d_role) {
+      //for now skip admin role and the base one
+      if($d_role <= 3){
+        countinue;
+      }
+      $g_role = variable_get('gallery3_integration_role_'."$d_id");
+      if(!empty($g_role) && $g_role !== 'None'){
+        $roles["$g_role"] = $g_id;
+      }
     }
   }
 

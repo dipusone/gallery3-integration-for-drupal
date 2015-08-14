@@ -87,9 +87,10 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
 
 
 function gallery3_integration_user_delete($account){
-  //FIXME: I've to check what to do we a user is deleted an he/she has album associated.
-  //There should be no problems but could be better to associate album whit an administrator
+
   $id=gallery3_integration_get_user_id($account->name);
+
+  gallery3_integration_transfer_items_ownership_to_admin($id);
   $placeh=array(':id'=> $id);
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
@@ -212,6 +213,36 @@ function gallery3_integration_user_role_delete($role){
 
 }
 
+
+/**
+ * This function will transfer the ownership of all items of $g_id to the admin
+ * with the lowest id.
+ *
+ * @param int $g_id the id of the user that is deleted.
+ *
+ **/
+function gallery3_integration_transfer_items_ownership_to_admin($g_id){
+
+  //The plan is this:
+  /**
+   *get the admin whit lower id:   SELECT * FROM g3_users WHERE admin=1 ORDER BY id ASC; (to be sure)
+   * all items from a user should  be in  SELECT id FROM g3_items where owner_id=$g_id;
+   * or simply
+   * UPDATE `g3_items`  SET owner_id=$admin_id  where owner_id=$deleted_user;
+   * this should set all the items by deleted user to admin one.
+   **/
+   //TODO: write the implementation for the method
+  $ITEMS_TABLE = variable_get('gallery3_integration_db_prefix').'items';
+  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
+
+  $admin_id = db_query("SELECT `id` FROM $USERS_TABLE WHERE `admin`=1 ORDER BY id ASC")->fetchField();
+  $placeh = array(
+    ':g_user_id' => $g_id,
+    ':admin_id' => $admin_id );
+  db_query("UPDATE $ITEMS_TABLE  SET owner_id=:admin_id  where owner_id=:g_user_id", $placeh);
+}
+
+
 function gallery3_interation_get_group_id($group){
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
 
@@ -219,7 +250,6 @@ function gallery3_interation_get_group_id($group){
   return $res;
 
 }
-
 
 function gallery3_integration_get_user_id($user){
 

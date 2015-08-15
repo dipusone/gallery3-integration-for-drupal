@@ -57,7 +57,6 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
     ':admin'=>'0',
     ':guest'=>'0');
 
-
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
 
   db_query("INSERT INTO $USERS_TABLE ( `name`,
@@ -160,7 +159,6 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
 
   gallery3_integration_add_groups($account,variable_get('gallery3_integration_manage_groups'));
 
-
   //If the plugin is enabled to manage tha gallery admin do it.
   if(variable_get('gallery3_integration_manage_admin')) {
     $g_id = gallery3_integration_get_user_id($account->name);
@@ -177,8 +175,8 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
  *
  **/
 function gallery3_integration_user_role_insert($role){
-  //If it is asked not to manage the groups or the group already exist in gallery3 return
 
+  //If it is asked not to manage the groups or the group already exist in gallery3 return
   if(!variable_get('gallery3_integration_manage_groups') || gallery3_integration_get_group_id($role->name)){
     return;
   }
@@ -192,21 +190,21 @@ function gallery3_integration_user_role_insert($role){
  * Hook called during role deletion
  *
  **/
-
 function gallery3_integration_user_role_delete($role){
 
-  $id = gallery3_integration_get_group_id($role->name);
+  $g_group_id = gallery3_integration_get_group_id($role->name);
+
   //If it is asked not to manage groups or the group do not exist in gallery3 return
-  if(!variable_get('gallery3_integration_manage_groups') || !$id){
+  if(!variable_get('gallery3_integration_manage_groups') || !$g_group_id){
     return;
   }
 
   $GROUPS_USERS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
   //Remove all associations user->groups
-  db_query("DELETE FROM $GROUPS_USERS_TABLE WHERE group_id=:id",array(':id' => $id ));
+  db_query("DELETE FROM $GROUPS_USERS_TABLE WHERE group_id=:id",array(':id' => $g_group_id ));
 
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
-  db_query("DELETE FROM $GROUPS_TABLE WHERE id=:id",array(':id' => $id ));
+  db_query("DELETE FROM $GROUPS_TABLE WHERE id=:id",array(':id' => $g_group_id ));
 
 }
 
@@ -238,25 +236,46 @@ function gallery3_integration_transfer_items_ownership_to_admin($g_id){
   db_query("UPDATE $ITEMS_TABLE  SET owner_id=:admin_id  where owner_id=:g_user_id", $placeh);
 }
 
-
+/**
+ * This function will return the id in gallery3 for the group passed as argument
+ *
+ * @param string $group the group to search
+ * @return mixed a int representing the id if the group is found or NULL
+ */
 function gallery3_integration_get_group_id($group){
-  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
 
+  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
   $res=db_query("SELECT `id` FROM $GROUPS_TABLE WHERE name=:nome ",array(':nome' => $group))->fetchField();
+
   return $res;
 
 }
 
+/**
+ * This function will return the id in gallery3 for the username passed as argument
+ *
+ * @param string $user the username to search in gallery3
+ * @return mixed a int representing the id if the user is found or NULL
+ *
+ */
 function gallery3_integration_get_user_id($user){
 
   $ph=array(':nome'=>$user);
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $res=db_query("SELECT `id` FROM $USERS_TABLE WHERE name=:nome ",$ph)->fetchField();
+
   return $res;
 }
 
-
+/**
+ * This function will hash the string passed as argument using the library
+ * and standard from gallery3.
+ *
+ * @param string $pass the string to encrypt
+ * @return string the hashed string passed as argument
+ *
+ */
 function gallery3_integration_hash_password($pass){
   #hash calculator for the password
   $hasher= new PasswordHash(10, true);
@@ -265,10 +284,16 @@ function gallery3_integration_hash_password($pass){
 }
 
 
+/**
+ * This function will return all the groups that are present in gallery3 plus a
+ * None group
+ *
+ * @return array containing all the gallery3 groups, plus a None group.
+ */
 function gallery3_integration_get_gallery3_groups(){
 
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
-  $results = db_query("SELECT `id`, name from $GROUPS_TABLE ORDER BY name")->fetchAll();
+  $results = db_query("SELECT `id`, name from $GROUPS_TABLE ORDER BY name");
 
   $groups = array();
   foreach ($results as $group) {
@@ -318,7 +343,17 @@ function gallery3_integration_add_groups($account, $extended_groups=FALSE){
 
 }
 
-
+/**
+ * This function will set the $g_id passed to be admin in gallery3
+ * or not depending on the $set_admin argument.
+ *
+ *
+ * @param int $g_id the id of the user to toggle the administrator state
+ * @param bool|TRUE $set_admin set it to TRUE (or omit) to make the $g_id an admin
+ *                             set it to FALSE to remove $g_id from admin
+ *
+ *
+ */
 function gallery3_integration_set_gallery_admin($g_id, $set_admin=TRUE){
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $placeh = array(':admin' =>  $set_admin ? 1 : 0,
@@ -328,3 +363,4 @@ function gallery3_integration_set_gallery_admin($g_id, $set_admin=TRUE){
   db_query("UPDATE $USERS_TABLE SET `admin`=:admin  WHERE id=:id", $placeh);
 
 }
+

@@ -179,7 +179,7 @@ function gallery3_integration_user_update(&$edit, $account, $category) {
 function gallery3_integration_user_role_insert($role){
   //If it is asked not to manage the groups or the group already exist in gallery3 return
 
-  if(!variable_get('gallery3_integration_manage_groups') || gallery3_interation_get_group_id($role->name)){
+  if(!variable_get('gallery3_integration_manage_groups') || gallery3_integration_get_group_id($role->name)){
     return;
   }
 
@@ -195,7 +195,7 @@ function gallery3_integration_user_role_insert($role){
 
 function gallery3_integration_user_role_delete($role){
 
-  $id = gallery3_interation_get_group_id($role->name);
+  $id = gallery3_integration_get_group_id($role->name);
   //If it is asked not to manage groups or the group do not exist in gallery3 return
   if(!variable_get('gallery3_integration_manage_groups') || !$id){
     return;
@@ -239,7 +239,7 @@ function gallery3_integration_transfer_items_ownership_to_admin($g_id){
 }
 
 
-function gallery3_interation_get_group_id($group){
+function gallery3_integration_get_group_id($group){
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
 
   $res=db_query("SELECT `id` FROM $GROUPS_TABLE WHERE name=:nome ",array(':nome' => $group))->fetchField();

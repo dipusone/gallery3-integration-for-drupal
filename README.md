@@ -10,3 +10,7 @@ This is a simple and dirty plugin for drupal to integrate the management of the 
 #What it does not:
 - Managing permissions on albums in gallery.
 
+
+
+
+

@@ -45,7 +45,7 @@ function gallery3_integration_user_presave($edit, $account, $category){
 function gallery3_integration_user_insert(&$edit, $account, $category){
 
   $first_name=$account->field_nome['und'][0]['value'];
-  $second_namevoglio=$account->field_cognome['und'][0]['value'];
+  $second_name=$account->field_cognome['und'][0]['value'];
   $full=$first_name." ".$second_name;
   $placeh=array(
     ':name'=> $account->name,
@@ -59,7 +59,6 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
 
 
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
-  $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
 
   db_query("INSERT INTO $USERS_TABLE ( `name`,
                                        `full_name`,
@@ -71,9 +70,7 @@ function gallery3_integration_user_insert(&$edit, $account, $category){
                                        `guest`)
             VALUES ( :name,:full,:pass,:login_count,:last_login,:email,:admin,:guest)", $placeh);
 
-  $id=gallery3_integration_get_user_id($account->name);
-
-    gallery3_integration_add_groups($account,variable_get('gallery3_integration_manage_groups'));
+  gallery3_integration_add_groups($account,variable_get('gallery3_integration_manage_groups'));
 
   //If the user is set to be admin in gallery do it
   if(variable_get('gallery3_integration_manage_admin')) {
@@ -231,7 +228,6 @@ function gallery3_integration_transfer_items_ownership_to_admin($g_id){
    * UPDATE `g3_items`  SET owner_id=$admin_id  where owner_id=$deleted_user;
    * this should set all the items by deleted user to admin one.
    **/
-   //TODO: write the implementation for the method
   $ITEMS_TABLE = variable_get('gallery3_integration_db_prefix').'items';
   $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
 
@@ -294,7 +290,6 @@ function gallery3_integration_get_gallery3_groups(){
 function gallery3_integration_add_groups($account, $extended_groups=FALSE){
   $g_id=gallery3_integration_get_user_id($account->name);
 
-  $USERS_TABLE = variable_get('gallery3_integration_db_prefix').'users';
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups_users';
   //default roles
   $roles = array('1' => $g_id,
@@ -306,7 +301,7 @@ function gallery3_integration_add_groups($account, $extended_groups=FALSE){
     foreach ($account->roles as $d_id => $d_role) {
       //for now skip admin role and the base one
       if($d_role <= 3){
-        countinue;
+        continue;
       }
       $g_role = variable_get('gallery3_integration_role_'."$d_id");
       if(!empty($g_role) && $g_role !== 'None'){

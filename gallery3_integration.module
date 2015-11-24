@@ -293,8 +293,12 @@ function gallery3_integration_hash_password($pass){
 function gallery3_integration_get_gallery3_groups(){
 
   $GROUPS_TABLE = variable_get('gallery3_integration_db_prefix').'groups';
-  $results = db_query("SELECT `id`, name from $GROUPS_TABLE ORDER BY name");
-
+  try{
+    $results = db_query("SELECT `id`, name from $GROUPS_TABLE ORDER BY name");
+  }
+  catch (PDOException $e) {
+    print_r($e->getMessage());
+  }
   $groups = array();
   foreach ($results as $group) {
     $groups[$group->id] = $group->name;
